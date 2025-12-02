@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -76,5 +77,62 @@ public class ParkingSlotService {
                 slot.getSlotNumber(),
                 slot.getStatus()
         );
+    }
+    
+    /**
+     * Check if parking lot has available slots
+     */
+    public boolean hasAvailableSlots(Long parkingLotId) {
+        try {
+            logger.info("Checking availability for parking lot ID: {}", parkingLotId);
+            
+            List<ParkingSlot> slots = parkingSlotRepository
+                    .findByAdmin_AdminIdOrderBySlotNumberAsc(parkingLotId);
+            
+            if (slots.isEmpty()) {
+                logger.warn("No slots found for parking lot ID: {}", parkingLotId);
+                return false;
+            }
+            
+            long occupiedCount = slots.stream()
+                    .filter(slot -> "occupied".equals(slot.getStatus()))
+                    .count();
+            
+            boolean hasAvailable = occupiedCount < slots.size();
+            logger.info("Parking lot {}: {}/{} occupied. Available: {}", 
+                       parkingLotId, occupiedCount, slots.size(), hasAvailable);
+            
+            return hasAvailable;
+            
+        } catch (Exception e) {
+            logger.error("Error checking parking lot availability: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+    
+    /**
+     * Get parking lot occupancy info
+     */
+    public Map<String, Long> getOccupancyInfo(Long parkingLotId) {
+        try {
+            List<ParkingSlot> slots = parkingSlotRepository
+                    .findByAdmin_AdminIdOrderBySlotNumberAsc(parkingLotId);
+            
+            long totalSlots = slots.size();
+            long occupiedSlots = slots.stream()
+                    .filter(slot -> "occupied".equals(slot.getStatus()))
+                    .count();
+            
+            Map<String, Long> occupancy = new java.util.HashMap<>();
+            occupancy.put("total", totalSlots);
+            occupancy.put("occupied", occupiedSlots);
+            occupancy.put("available", totalSlots - occupiedSlots);
+            
+            return occupancy;
+            
+        } catch (Exception e) {
+            logger.error("Error getting occupancy info: {}", e.getMessage(), e);
+            return java.util.Collections.emptyMap();
+        }
     }
 }

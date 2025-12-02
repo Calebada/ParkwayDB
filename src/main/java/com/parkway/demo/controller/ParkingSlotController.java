@@ -66,6 +66,32 @@ public class ParkingSlotController {
     }
     
     /**
+     * GET /api/parking-slots/:parkingLotId/availability
+     * Check if parking lot has available slots
+     */
+    @GetMapping("/{parkingLotId}/availability")
+    public ResponseEntity<?> checkAvailability(@PathVariable("parkingLotId") Long parkingLotId) {
+        try {
+            logger.info("GET /api/parking-slots/{}/availability - Checking availability", parkingLotId);
+            
+            Map<String, Object> availability = new HashMap<>();
+            boolean hasAvailable = parkingSlotService.hasAvailableSlots(parkingLotId);
+            Map<String, Long> occupancy = parkingSlotService.getOccupancyInfo(parkingLotId);
+            
+            availability.put("hasAvailable", hasAvailable);
+            availability.put("occupancy", occupancy);
+            
+            return new ResponseEntity<>(availability, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            logger.error("Error checking parking availability: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Error checking parking availability: " + e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
      * PUT /api/parking-slots/:slotId
      * Update parking slot status and return updated slot
      */

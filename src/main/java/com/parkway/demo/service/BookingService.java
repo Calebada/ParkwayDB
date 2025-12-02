@@ -83,6 +83,23 @@ public class BookingService {
             Admin admin = adminRepository.findById(request.getParkingLotId())
                     .orElseThrow(() -> new RuntimeException("Parking lot not found with id: " + request.getParkingLotId()));
             
+            // Check if parking lot has available slots
+            long totalSlots = parkingSlotRepository.findByAdmin_AdminIdOrderBySlotNumberAsc(request.getParkingLotId()).size();
+            long occupiedSlots = parkingSlotRepository.findByAdmin_AdminIdOrderBySlotNumberAsc(request.getParkingLotId())
+                    .stream()
+                    .filter(slot -> "occupied".equals(slot.getStatus()))
+                    .count();
+            
+            logger.info("Parking lot {}: {}/{} slots occupied", request.getParkingLotId(), occupiedSlots, totalSlots);
+            
+            if (totalSlots == 0) {
+                throw new RuntimeException("Parking lot has no slots configured");
+            }
+            
+            if (occupiedSlots >= totalSlots) {
+                throw new RuntimeException("Parking lot is already full. No available slots at this moment.");
+            }
+            
             // Create booking
             Booking booking = new Booking();
             booking.setUser(user);
