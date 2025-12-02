@@ -32,4 +32,18 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Transactional
     @Query("UPDATE Notification n SET n.read = true WHERE n.userId = :userId")
     void markAllAsReadByUserId(@Param("userId") Long userId);
+    
+    /**
+     * Delete old notifications (older than specified days)
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM notifications WHERE created_at < DATE_SUB(NOW(), INTERVAL :days DAY) AND `read` = true", nativeQuery = true)
+    int deleteOldReadNotifications(@Param("days") int days);
+    
+    /**
+     * Count total notifications in system
+     */
+    @Query("SELECT COUNT(n) FROM Notification n")
+    long countTotalNotifications();
 }

@@ -4,6 +4,7 @@ import com.parkway.demo.dto.BookingDTO;
 import com.parkway.demo.dto.BookingRequest;
 import com.parkway.demo.model.Admin;
 import com.parkway.demo.model.Booking;
+import com.parkway.demo.model.Notification;
 import com.parkway.demo.model.ParkingSlot;
 import com.parkway.demo.model.User;
 import com.parkway.demo.repository.AdminRepository;
@@ -39,6 +40,9 @@ public class BookingService {
     
     @Autowired
     private com.parkway.demo.repository.VehicleRepository vehicleRepository;
+    
+    @Autowired
+    private NotificationService notificationService;
     
     /**
      * Get all bookings for a specific user
@@ -114,6 +118,34 @@ public class BookingService {
             
             Booking savedBooking = bookingRepository.save(booking);
             logger.info("Booking created successfully with ID: {}", savedBooking.getBookingId());
+            
+            // Create admin notification for the booking request
+            try {
+                Notification adminNotification = new Notification();
+                adminNotification.setAdminId(admin.getAdminId());
+                adminNotification.setUserId(user.getUserID());
+                adminNotification.setBookingId(savedBooking.getBookingId());
+                adminNotification.setParkingLotId(admin.getAdminId());
+                adminNotification.setTitle("New Booking Request");
+                adminNotification.setMessage(user.getFirstname() + " " + user.getLastname() + 
+                                             " requested to book " + admin.getParkingLotName() + 
+                                             " on " + request.getDateReserved() + 
+                                             " from " + request.getTimeIn() + " to " + request.getTimeOut());
+                adminNotification.setType("booking");
+                adminNotification.setUserName(user.getFirstname() + " " + user.getLastname());
+                adminNotification.setParkingLotName(admin.getParkingLotName());
+                adminNotification.setDateReserved(request.getDateReserved());
+                adminNotification.setTimeIn(request.getTimeIn());
+                adminNotification.setTimeOut(request.getTimeOut());
+                adminNotification.setVehicleType(request.getVehicleType());
+                adminNotification.setRead(false);
+                
+                notificationService.createAdminNotification(adminNotification);
+                logger.info("✅ Admin notification created for booking ID: {}", savedBooking.getBookingId());
+            } catch (Exception notifException) {
+                logger.error("❌ Error creating admin notification for booking {}: {}", 
+                           savedBooking.getBookingId(), notifException.getMessage());
+            }
             
             return savedBooking;
             
@@ -210,6 +242,27 @@ public class BookingService {
             
             logger.info("Booking confirmed successfully: {} - vehicle_id={}, slot_id={}", 
                        bookingId, vehicle.getVehicleID(), slot.getSlotId());
+            
+            // Create user notification about booking confirmation
+            try {
+                Notification userNotification = new Notification();
+                userNotification.setUserId(user.getUserID());
+                userNotification.setBookingId(bookingId);
+                userNotification.setParkingLotId(booking.getAdmin().getAdminId());
+                userNotification.setTitle("Booking Confirmed! ✅");
+                userNotification.setMessage("Your booking at " + booking.getAdmin().getParkingLotName() + 
+                                           " on " + booking.getDateReserved() + 
+                                           " (" + booking.getTimeIn() + " - " + booking.getTimeOut() + 
+                                           ") has been confirmed! Slot: " + slot.getSlotNumber());
+                userNotification.setType("confirmation");
+                userNotification.setRead(false);
+                
+                notificationService.createUserNotification(userNotification);
+                logger.info("✅ User notification created for booking ID: {}", bookingId);
+            } catch (Exception notifException) {
+                logger.error("❌ Error creating user notification for booking {}: {}", 
+                           bookingId, notifException.getMessage());
+            }
             
         } catch (Exception e) {
             logger.error("Error confirming booking {}: {}", bookingId, e.getMessage(), e);

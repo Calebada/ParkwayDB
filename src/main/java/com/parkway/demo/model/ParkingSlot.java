@@ -80,6 +80,10 @@ public class ParkingSlot {
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     
+    @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @JsonProperty("is_deleted")
+    private Boolean isDeleted = false;
+    
     // Default constructor
     public ParkingSlot() {
     }
@@ -207,5 +211,13 @@ public class ParkingSlot {
     @JsonProperty("parking_lot_id")
     public Long getParkingLotId() {
         return admin != null ? admin.getStaffID() : null;
+    }
+    
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+    
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

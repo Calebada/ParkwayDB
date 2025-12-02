@@ -70,7 +70,7 @@ public class Notification {
     @JsonProperty("vehicle_type")
     private String vehicleType;
     
-    @Column(name = "read", nullable = false)
+    @Column(name = "`read`", nullable = false)
     @JsonProperty("read")
     private Boolean read = false;
     

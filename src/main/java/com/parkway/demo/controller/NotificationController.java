@@ -179,4 +179,57 @@ public class NotificationController {
             return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    /**
+     * POST /api/notifications/cleanup
+     * Manually trigger cleanup of old notifications (admin only)
+     * Query param: days (optional, default 30)
+     */
+    @PostMapping("/cleanup")
+    public ResponseEntity<?> manualCleanup(@RequestParam(value = "days", defaultValue = "30") int days) {
+        try {
+            logger.info("POST /api/notifications/cleanup - Manual cleanup triggered for notifications older than {} days", days);
+            
+            int deletedCount = notificationService.manualCleanupOldNotifications(days);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Cleanup completed");
+            response.put("deleted_count", deletedCount);
+            response.put("retention_days", days);
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            logger.error("Error during manual cleanup: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * GET /api/notifications/stats
+     * Get notification system statistics
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<?> getNotificationStats() {
+        try {
+            logger.info("GET /api/notifications/stats - Fetching notification statistics");
+            
+            NotificationService.NotificationStats stats = notificationService.getNotificationStats();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("total_notifications", stats.totalNotifications);
+            response.put("retention_days", stats.retentionDays);
+            response.put("message", "Statistics retrieved");
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            logger.error("Error fetching notification stats: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
